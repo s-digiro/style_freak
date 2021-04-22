@@ -1,5 +1,5 @@
 [package]
-name = "StyleFreak"
+name = "style_freak"
 version = "0.1.0"
 authors = ["Sean DiGirolamo <s.digirolamo218@gmail.com>"]
 edition = "2018"
