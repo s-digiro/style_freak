@@ -1,0 +1,14 @@
+[package]
+name = "StyleFreak"
+version = "0.1.0"
+authors = ["Sean DiGirolamo <s.digirolamo218@gmail.com>"]
+edition = "2018"
+description = "Small mpd client for traversing genres and subgenres"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ncurses = "5.99.0"
+mpd = "*"
+json = "0.12.4"
