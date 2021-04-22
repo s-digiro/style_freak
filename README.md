@@ -32,3 +32,7 @@ This project was mostly for testing out rust as a programming language. Original
 
 ## To Do
 * `<All>` options in Artist, Album, and Track menus
+
+![](images/styles.png)
+![](images/artist_album.png)
+![](images/on_ncmpcpp.png)
