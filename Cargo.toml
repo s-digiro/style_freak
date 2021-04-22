@@ -10,5 +10,5 @@ license = "MIT"
 
 [dependencies]
 ncurses = "5.99.0"
-mpd = "*"
+mpd = "0.0.12"
 json = "0.12.4"
