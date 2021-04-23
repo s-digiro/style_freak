@@ -1,4 +1,4 @@
-# Stylefreak
+# Style Freak
 Very small mpd client with limited functionality. Generates a genre-subgenre tree that the user can traverse to see all tracks falling under that genre selection. At any point, the user can add all tracks falling under the currently selected parameters to the mpd queue. Tracks will only be considered to fall under the selected genre if their "genre" tag matches one of the lowest level subgenres under a genre. Genres and their subgenres are parsed from a simple textfile listing genres, and subgenres underneath them, with a tab depth 1 more than the parent genre
 
 ## Example genre file
