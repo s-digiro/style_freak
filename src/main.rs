@@ -67,6 +67,16 @@ fn main() {
     screen.draw(ncurses::getmaxy(term), ncurses::getmaxx(term));
 
     loop {
+        if let Err(_) = test_mpd_conn(&mut mpd_conn) {
+            mpd_conn = match Client::connect("127.0.0.1:6600") {
+                Ok(conn) => conn,
+                Err(_) => {
+                    ncurses::mvaddstr(0, 0,"Cannot connect to mpd");
+                    continue
+                },
+            };
+        }
+
         let ch = ncurses::getch();
         if ch != ncurses::ERR {
             match ch {
@@ -103,6 +113,13 @@ fn init_ncurses() -> WINDOW {
         ncurses::setlocale(ncurses::LcCategory::all, "");
 
         window
+}
+
+fn test_mpd_conn(mpd_conn: &mut Client) -> Result<(), ()> {
+    match mpd_conn.ping() {
+        Ok(_) => Ok(()),
+        Err(_) => Err(()),
+    }
 }
 
 fn shutdown_ncurses(window: WINDOW) {

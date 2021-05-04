@@ -8,7 +8,6 @@ use mpd::Term;
 use mpd::Song;
 
 use crate::StyleTree;
-use crate::Style;
 use crate::colors::*;
 
 use super::Screen;
@@ -85,53 +84,9 @@ impl StyleViewScreen {
     fn add_tracks(
         &self,
         mpd_conn: &mut Client,
-        tree: &StyleTree,
-        genres: Vec<Style>,
-        artist: Option<&str>,
-        album: Option<&str>,
-        track: Option<&str>
     ) {
-
-        let mut tracks = Vec::new();
-
-        for genre in genres {
-            let mut query = Query::new();
-            let mut query_ref = &mut query;
-
-            if let Some(artist) = artist {
-                query_ref = query_ref.and(
-                    Term::Tag(Cow::Borrowed("albumartist")),
-                    artist
-                );
-            }
-
-            if let Some(album) = album {
-                query_ref = query_ref.and(
-                    Term::Tag(Cow::Borrowed("Album")),
-                    album
-                );
-            }
-
-            if let Some(track) = track {
-                query_ref = query_ref.and(
-                    Term::Tag(Cow::Borrowed("Track")),
-                    track
-                );
-            }
-
-            tracks.append(
-                &mut mpd_conn.find(
-                    query_ref.and(
-                        Term::Tag(Cow::Borrowed("genre")),
-                        tree.name(genre),
-                    ),
-                    None
-                ).unwrap()
-            );
-        }
-
-        for track in tracks {
-            mpd_conn.push(track).unwrap();
+        for song in &self.songs {
+            mpd_conn.push(song).unwrap();
         }
     }
 
@@ -150,7 +105,7 @@ impl StyleViewScreen {
         }
     }
 
-    fn fetch_styles(&mut self, tree: &StyleTree) -> bool {
+    fn fetch_styles(&mut self, tree: &StyleTree) -> Result<(), ()> {
         let parents = if let Some(menu) = self.styles.last() {
             menu.style_selection()
         } else {
@@ -163,14 +118,14 @@ impl StyleViewScreen {
         }
 
         if children.is_empty() {
-            true
+            Result::Err(())
         } else {
             let mut new_menu = StyleMenu::new();
             new_menu.set_styles(children, tree);
 
             self.styles.push(new_menu);
 
-            false
+            Result::Ok(())
         }
     }
 
@@ -199,23 +154,37 @@ impl StyleViewScreen {
     fn fetch_albums(&mut self, mpd_conn: &mut Client, tree: &StyleTree) {
         let genres = self.styles.last().unwrap().style_selection();
 
-        let artist = self.artists.sel().val();
+        let artists = self.artists.selection();
 
         let mut albums = Vec::new();
 
-        for genre in genres {
-            albums.append(
-                &mut mpd_conn.list(
-                    &Term::Tag(Cow::Borrowed("Album")),
-                    Query::new().and(
-                        Term::Tag(Cow::Borrowed("genre")),
-                        tree.name(genre),
-                    ).and(
-                        Term::Tag(Cow::Borrowed("albumartist")),
-                        artist,
-                    ),
-                ).unwrap()
-            );
+        if artists.is_empty() {
+            for genre in genres {
+                albums.append(
+                    &mut mpd_conn.list(
+                        &Term::Tag(Cow::Borrowed("Album")),
+                        Query::new().and(
+                            Term::Tag(Cow::Borrowed("genre")),
+                            tree.name(genre),
+                        )
+                    ).unwrap()
+                );
+            }
+        } else {
+            for genre in genres {
+                albums.append(
+                    &mut mpd_conn.list(
+                        &Term::Tag(Cow::Borrowed("Album")),
+                        Query::new().and(
+                            Term::Tag(Cow::Borrowed("genre")),
+                            tree.name(genre),
+                        ).and(
+                            Term::Tag(Cow::Borrowed("albumartist")),
+                            *artists.first().unwrap()
+                        ),
+                    ).unwrap()
+                );
+            }
         }
 
         self.albums.set_items(
@@ -226,8 +195,7 @@ impl StyleViewScreen {
     fn fetch(&mut self, mpd_conn: &mut Client, tree: &StyleTree) {
         match self.state {
             State::Style(_) => {
-                let result = self.fetch_styles(tree);
-                if result {
+                if let Err(_) = self.fetch_styles(tree) {
                     self.fetch_artists(mpd_conn, tree);
                 }
             },
@@ -244,29 +212,70 @@ impl StyleViewScreen {
     fn fetch_tracks(&mut self, mpd_conn: &mut Client, tree: &StyleTree) {
         let genres = self.styles.last().unwrap().style_selection();
 
-        let artist = self.artists.sel().val();
+        let artists = self.artists.selection();
 
-        let album = self.albums.sel().val();
+        let albums = self.albums.selection();
 
         let mut new_items = Vec::new();
 
-        for genre in genres {
-            new_items.append(
-                &mut mpd_conn.find(
-                    Query::new().and(
-                        Term::Tag(Cow::Borrowed("genre")),
-                        tree.name(genre),
-                    ).and(
-                        Term::Tag(Cow::Borrowed("albumartist")),
-                        artist,
-                    ).and(
-                        Term::Tag(Cow::Borrowed("album")),
-                        album,
-                    ),
-                    None
-                ).unwrap()
-            );
+        if artists.is_empty() && albums.is_empty() {
+            for genre in &genres {
+                new_items.append(
+                    &mut mpd_conn.search(
+                        Query::new().and(
+                            Term::Tag(Cow::Borrowed("Genre")),
+                            tree.name(*genre),
+                        ),
+                        None
+                    ).unwrap()
+                );
+            }
+        } else {
+            if artists.is_empty() && !albums.is_empty() {
+                new_items.append(
+                    &mut mpd_conn.search(
+                        Query::new().and(
+                            Term::Tag(Cow::Borrowed("album")),
+                            *albums.last().unwrap()
+                        ),
+                        None
+                    ).unwrap()
+                );
+            } else if !artists.is_empty() && albums.is_empty() {
+                new_items.append(
+                    &mut mpd_conn.search(
+                        Query::new().and(
+                            Term::Tag(Cow::Borrowed("albumartist")),
+                            *artists.last().unwrap()
+                        ),
+                        None
+                    ).unwrap()
+                );
+            } else {
+                new_items.append(
+                    &mut mpd_conn.search(
+                        Query::new().and(
+                            Term::Tag(Cow::Borrowed("albumartist")),
+                            *artists.last().unwrap()
+                        ).and(
+                            Term::Tag(Cow::Borrowed("album")),
+                            *albums.last().unwrap()
+                        ),
+                        None
+                    ).unwrap()
+                );
+            }
         }
+
+        new_items = new_items.into_iter()
+            .filter(|song| {
+                genres.iter()
+                    .any(|genre| {
+                        tree.name(*genre) == song.tags.get("Genre")
+                            .unwrap_or(&String::from("<Empty>"))
+                    })
+            }
+            ).collect();
 
         self.songs = new_items;
 
@@ -314,21 +323,22 @@ impl Screen for StyleViewScreen {
             },
             32 => match self.state { // Space
                 State::Style(_) => {
-                    let genres = self.styles.last().unwrap().style_selection();
-                    self.add_tracks(mpd_client, tree, genres, None, None, None);
+                    self.fetch_artists(mpd_client, tree);
+                    self.fetch_albums(mpd_client, tree);
+                    self.fetch_tracks(mpd_client, tree);
+                    self.add_tracks(mpd_client);
                 },
                 State::Artist => {
-                    let genres = self.styles.last().unwrap().style_selection();
-                    let artist = self.artists.sel().val();
-                    self.add_tracks(mpd_client, tree, genres, Some(artist), None, None);
+                    self.fetch_albums(mpd_client, tree);
+                    self.fetch_tracks(mpd_client, tree);
+                    self.add_tracks(mpd_client);
                 },
                 State::Album => {
-                    let genres = self.styles.last().unwrap().style_selection();
-                    let artist = self.artists.sel().val();
-                    let album = self.albums.sel().val();
-                    self.add_tracks(mpd_client, tree, genres, Some(artist), Some(album), None);
+                    self.fetch_tracks(mpd_client, tree);
+                    self.add_tracks(mpd_client);
                 },
                 State::Track => {
+                    self.fetch_tracks(mpd_client, tree);
                     let song = self.songs.get(self.tracks.i()).unwrap();
                     mpd_client.push(song).unwrap();
                 },
@@ -369,7 +379,7 @@ impl Screen for StyleViewScreen {
     }
 
     fn on_entrance(&mut self, mpd_conn: &mut Client, tree: &StyleTree) {
-            self.fetch_styles(tree);
+            self.fetch_styles(tree).unwrap();
 
             let state = self.state.clone();
             for _ in 0..3 {

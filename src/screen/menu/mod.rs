@@ -29,12 +29,27 @@ impl Menu {
         }
     }
 
-    pub fn sel(&self) -> &Item {
-        &self.items[self.sel]
+    pub fn selection(&self) -> Vec<&str> {
+        match &self.items[self.sel] {
+            /*Item::All => self.items.iter()
+                .filter(|s| if let Item::Normal(_) = s {
+                    true
+                } else {
+                    false
+                }).map(|i| match i {
+                    Item::Normal(s) => &s,
+                    _ => "",
+                }).collect(),
+                */
+            Item::All => vec![],
+            Item::Normal(s) => vec![&s],
+            Item::Empty => vec![],
+        }
     }
 
     pub fn set_items(&mut self, items: Vec<Item>) {
         self.items = items;
+        self.items.insert(0, Item::All);
         self.sel = 0;
     }
 
