@@ -1,6 +1,6 @@
 [package]
 name = "style_freak"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Sean DiGirolamo <s.digirolamo218@gmail.com>"]
 edition = "2018"
 description = "Small mpd client for traversing genres and subgenres"

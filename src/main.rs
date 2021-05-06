@@ -67,6 +67,7 @@ fn main() {
     screen.draw(ncurses::getmaxy(term), ncurses::getmaxx(term));
 
     loop {
+        let ch = ncurses::getch();
         if let Err(_) = test_mpd_conn(&mut mpd_conn) {
             mpd_conn = match Client::connect("127.0.0.1:6600") {
                 Ok(conn) => conn,
@@ -77,7 +78,6 @@ fn main() {
             };
         }
 
-        let ch = ncurses::getch();
         if ch != ncurses::ERR {
             match ch {
                 ncurses::KEY_RESIZE => {
@@ -107,7 +107,7 @@ fn init_ncurses() -> WINDOW {
         ncurses::start_color();
         ncurses::cbreak();
         ncurses::keypad(window, true);
-        ncurses::nodelay(window, true);
+        //ncurses::nodelay(window, true);
         ncurses::noecho();
         ncurses::curs_set(ncurses::CURSOR_VISIBILITY::CURSOR_INVISIBLE);
         ncurses::setlocale(ncurses::LcCategory::all, "");
