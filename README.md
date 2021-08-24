@@ -32,7 +32,7 @@ According to the above rules...
 * /: Perform a search on the current menu
 
 ## Notes
-This project was mostly for testing out rust as a programming language. Originally I wanted to make an entire music player modeled after ncmpcpp but with more flexibility like foobar2000, configured via textfiles. After a while though, I decided that I basically like ncmpcpp and it'd be too much work. Therefore, I scrapped the majority of the project to work on other things and limited scope to the one thing I really wanted, genre sorting and the ability to customize that sorting
+Originally I wanted to make an entire music player modeled after ncmpcpp but with more flexibility like foobar2000, configured via textfiles. After a while though, I decided that I generally like ncmpcpp and it'd be a lot of work for not a lot of payoff. Therefore, I scrapped the majority of the project to work on other things and limited scope to the one thing I really wanted, genre sorting and the ability to customize that sorting
 
 ## To Do
 * `<All>` options in Artist, Album, and Track menus
